@@ -350,6 +350,8 @@
                 const topToken = appState.tokens[appState.topToken];
                 const bottomToken = appState.tokens[appState.bottomToken];
 
+                if (!topToken || !bottomToken) return;
+
                 const amountInUsdt = amount * topToken.price;
                 const finalAmount = amountInUsdt / bottomToken.price;
 
@@ -362,16 +364,14 @@
                 buyTab.classList.toggle('active', appState.mode === 'buy');
                 sellTab.classList.toggle('active', appState.mode === 'sell');
 
-                // Update input fields based on mode
-                if (appState.mode === 'buy') {
-                    appState.topToken = 'YLDX';
-                } else { // sell mode
-                    if(appState.topToken === 'YLDX') {
-                       appState.topToken = 'USDT';
-                    }
-                }
+                // Prevent selecting the same token on both sides.
                 if (appState.topToken === appState.bottomToken) {
-                    appState.bottomToken = appState.topToken === 'USDT' ? 'ETH' : 'USDT';
+                    for (const symbol in appState.tokens) {
+                        if (symbol !== appState.topToken) {
+                            appState.bottomToken = symbol;
+                            break;
+                        }
+                    }
                 }
 
                 // Update currency selectors
@@ -385,8 +385,19 @@
                 const rate = topTokenData.price / bottomTokenData.price;
                 priceInfo.innerHTML = `1 ${topTokenData.symbol} ≈ <span class="text-white">${formatCurrency(rate, rate > 10 ? 2 : 6)}</span> ${bottomTokenData.symbol}`;
 
-                // Update button text
-                actionButton.innerText = `${appState.mode === 'buy' ? 'Buy' : 'Sell'} ${bottomTokenData.symbol}`;
+                // Update button text and labels
+                const topInputLabel = document.getElementById('top-input-label');
+                const bottomInputLabel = document.getElementById('bottom-input-label');
+
+                if (appState.mode === 'buy') {
+                    topInputLabel.innerText = 'Spend';
+                    bottomInputLabel.innerText = 'Receive';
+                    actionButton.innerText = `Buy ${bottomTokenData.symbol}`;
+                } else { // sell mode
+                    topInputLabel.innerText = 'Sell';
+                    bottomInputLabel.innerText = 'Receive';
+                    actionButton.innerText = `Sell ${topTokenData.symbol}`;
+                }
                 
                 calculate();
             };
@@ -396,7 +407,7 @@
                 const oppositeToken = position === 'top' ? appState.bottomToken : appState.topToken;
                 
                 for (const symbol in appState.tokens) {
-                    if (symbol !== oppositeToken && !(appState.mode === 'buy' && position === 'top' && symbol !== 'YLDX') && !(appState.mode === 'sell' && position === 'bottom' && symbol !== 'YLDX')) {
+                    if (symbol !== oppositeToken) {
                         const token = appState.tokens[symbol];
                         const item = document.createElement('div');
                         item.className = 'token-item';
@@ -414,15 +425,34 @@
             };
 
             // --- Event Listeners ---
-            buyTab.addEventListener('click', () => { appState.mode = 'buy'; updateUI(); });
-            sellTab.addEventListener('click', () => { appState.mode = 'sell'; updateUI(); });
+            buyTab.addEventListener('click', () => { 
+                if (appState.mode !== 'buy') {
+                    appState.mode = 'buy'; 
+                    updateUI(); 
+                }
+            });
+            sellTab.addEventListener('click', () => { 
+                if (appState.mode !== 'sell') {
+                    appState.mode = 'sell'; 
+                    updateUI(); 
+                }
+            });
             
-            topCurrencySelector.addEventListener('click', () => renderTokenList(topTokenList, 'top'));
-            bottomCurrencySelector.addEventListener('click', () => renderTokenList(bottomTokenList, 'bottom'));
+            topCurrencySelector.addEventListener('click', (e) => {
+                e.stopPropagation();
+                bottomTokenList.classList.add('hidden');
+                renderTokenList(topTokenList, 'top');
+            });
+
+            bottomCurrencySelector.addEventListener('click', (e) => {
+                e.stopPropagation();
+                topTokenList.classList.add('hidden');
+                renderTokenList(bottomTokenList, 'bottom');
+            });
 
             document.addEventListener('click', (e) => {
-                if (!topCurrencySelector.contains(e.target) && !topTokenList.contains(e.target)) topTokenList.classList.add('hidden');
-                if (!bottomCurrencySelector.contains(e.target) && !bottomTokenList.contains(e.target)) bottomTokenList.classList.add('hidden');
+                if (!topTokenList.contains(e.target)) topTokenList.classList.add('hidden');
+                if (!bottomTokenList.contains(e.target)) bottomTokenList.classList.add('hidden');
             });
             
             topInputField.addEventListener('input', calculate);
@@ -434,7 +464,7 @@
                 const receiveCurrency = appState.bottomToken;
 
                 if (spendAmount > 0) {
-                     showNotification('Purchase Confirmation', `You are about to ${appState.mode} ${receiveAmount} ${receiveCurrency} for ${spendAmount} ${spendCurrency}. This is a simulation.`);
+                     showNotification('Purchase Confirmation', `You are about to ${appState.mode === 'buy' ? 'spend' : 'sell'} ${spendAmount} ${spendCurrency} to receive ${receiveAmount} ${receiveCurrency}. This is a simulation.`);
                 } else {
                     showNotification('Invalid Input', 'Please enter a valid amount to spend.');
                 }
