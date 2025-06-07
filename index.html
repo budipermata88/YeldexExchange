@@ -12,6 +12,9 @@
     <link rel="shortcut icon" href="logo.png">
     <meta name="theme-color" content="#000000">
 
+    <!-- Ethers.js for wallet interaction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" xintegrity="sha512-FDc6fLmkfdatm4yW/sbeE3hL2sF5CBEsd9k5lJzDEI6SDaBno5Jc/V8xT1Uj8SQZwvSxM025N3VTF/KqCjK/Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -122,8 +125,10 @@
 
                 <!-- User Actions for Desktop -->
                 <div class="hidden md:flex items-center space-x-4">
-                    <a href="#" class="text-white font-semibold hover:text-yellow-400 transition-colors">Log In</a>
-                    <a href="#" style="background-color: var(--yeldex-yellow); color: var(--yeldex-bg);" class="px-4 py-2 rounded-md font-bold transition-opacity hover:opacity-90">Register</a>
+                    <!-- Wallet Connect Button replaces Log In/Register -->
+                    <button id="connect-wallet-btn" style="background-color: var(--yeldex-yellow); color: var(--yeldex-bg);" class="px-4 py-2 rounded-md font-bold transition-opacity hover:opacity-90">
+                        Connect Wallet
+                    </button>
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -145,8 +150,10 @@
                 <a href="#" class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Futures</a>
                 <div class="pt-4 pb-3 border-t border-gray-700">
                     <div class="flex flex-col items-center space-y-2">
-                        <a href="#" class="w-full text-center text-white font-semibold hover:text-yellow-400 transition-colors px-3 py-2">Log In</a>
-                        <a href="#" style="background-color: var(--yeldex-yellow); color: var(--yeldex-bg);" class="w-11/12 text-center px-4 py-2 rounded-md font-bold transition-opacity hover:opacity-90">Register</a>
+                        <!-- Wallet Connect Button for mobile -->
+                        <button id="connect-wallet-btn-mobile" style="background-color: var(--yeldex-yellow); color: var(--yeldex-bg);" class="w-11/12 text-center px-4 py-2 rounded-md font-bold transition-opacity hover:opacity-90">
+                            Connect Wallet
+                        </button>
                     </div>
                 </div>
             </div>
@@ -205,7 +212,11 @@
                 <div class="space-y-4">
                     <!-- Top Input Group -->
                     <div class="relative space-y-2">
-                        <label id="top-input-label" class="text-sm font-medium" style="color: var(--yeldex-text-secondary);">Spend</label>
+                        <div class="flex justify-between items-center">
+                            <label id="top-input-label" class="text-sm font-medium" style="color: var(--yeldex-text-secondary);">Spend</label>
+                            <!-- Balance display -->
+                            <div id="top-token-balance" class="text-xs text-gray-400"></div>
+                        </div>
                         <div class="flex items-center bg-gray-900 rounded-md border border-gray-700 focus-within:border-yellow-400 transition-colors">
                             <input type="number" id="top-input-field" value="100" class="w-full bg-transparent p-3 text-white text-xl font-semibold outline-none">
                             <div class="h-8 border-l border-gray-700 mx-3"></div>
@@ -263,6 +274,50 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- Wallet Connection Elements ---
+            const connectWalletBtn = document.getElementById('connect-wallet-btn');
+            const connectWalletBtnMobile = document.getElementById('connect-wallet-btn-mobile');
+            let provider, signer, currentAccount = null;
+
+            // --- Wallet Connection Logic ---
+            const connectWallet = async () => {
+                try {
+                    if (!window.ethereum) {
+                        showNotification('No Wallet Detected', 'Please install MetaMask or a similar wallet to use this feature.');
+                        return;
+                    }
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    currentAccount = await signer.getAddress();
+                    updateWalletUI();
+                } catch (error) {
+                    console.error("Failed to connect wallet:", error);
+                    showNotification('Connection Failed', 'The wallet connection was cancelled or failed.');
+                }
+            };
+            
+            const updateWalletUI = () => {
+                if (currentAccount) {
+                    const truncatedAddress = `${currentAccount.substring(0, 6)}...${currentAccount.substring(currentAccount.length - 4)}`;
+                    connectWalletBtn.innerText = truncatedAddress;
+                    connectWalletBtn.style.backgroundColor = 'var(--yeldex-surface)';
+                    connectWalletBtn.style.color = 'var(--yeldex-text-primary)';
+
+                    connectWalletBtnMobile.innerText = truncatedAddress;
+                    connectWalletBtnMobile.style.backgroundColor = 'var(--yeldex-surface)';
+                    connectWalletBtnMobile.style.color = 'var(--yeldex-text-primary)';
+                    updateUI(); // Update balances and UI after connecting
+                } else {
+                    connectWalletBtn.innerText = 'Connect Wallet';
+                    connectWalletBtnMobile.innerText = 'Connect Wallet';
+                }
+            };
+            
+            connectWalletBtn.addEventListener('click', connectWallet);
+            connectWalletBtnMobile.addEventListener('click', connectWallet);
+
+
             // --- Mobile Menu Toggle ---
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
@@ -290,6 +345,7 @@
             
             const topCurrencySelector = document.getElementById('top-currency-selector');
             const bottomCurrencySelector = document.getElementById('bottom-currency-selector');
+            const topTokenBalance = document.getElementById('top-token-balance');
 
             const topTokenList = document.getElementById('top-token-list');
             const bottomTokenList = document.getElementById('bottom-token-list');
@@ -309,15 +365,36 @@
                 topToken: 'YLDX',
                 bottomToken: 'USDT',
                 tokens: {
-                    'YLDX': { name: 'Yeldex', symbol: 'YLDX', logo: 'logo.png', price: 1/324 }, // Price in USDT
-                    'USDT': { name: 'Tether', symbol: 'USDT', logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png', price: 1 },
-                    'ETH': { name: 'Ethereum', symbol: 'ETH', logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png', price: 0 },
-                    'BNB': { name: 'BNB', symbol: 'BNB', logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png', price: 0 },
-                    'SOL': { name: 'Solana', symbol: 'SOL', logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png', price: 0 }
+                    // NOTE: Addresses are for BNB Smart Chain (BSC)
+                    'YLDX': { name: 'Yeldex', symbol: 'YLDX', logo: 'logo.png', price: 1/324, address: '0xYourYeldexTokenAddressHere', decimals: 18 },
+                    'USDT': { name: 'Tether', symbol: 'USDT', logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png', price: 1, address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 },
+                    'ETH': { name: 'Ethereum', symbol: 'ETH', logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png', price: 0, address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', decimals: 18 },
+                    'BNB': { name: 'BNB', symbol: 'BNB', logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png', price: 0, address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', decimals: 18, isNative: true },
+                    'SOL': { name: 'Solana', symbol: 'SOL', logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png', price: 0, address: '0x570A5D26f7765Ecb712C0924E4De545B89fD43dF', decimals: 9 }
                 }
             };
             
+            const erc20Abi = ["function balanceOf(address owner) view returns (uint256)", "function decimals() view returns (uint8)"];
+
             // --- Functions ---
+            const getTokenBalance = async (tokenSymbol) => {
+                if (!currentAccount || !provider) return;
+                
+                const token = appState.tokens[tokenSymbol];
+                if (!token) return;
+
+                let balance;
+                if (token.isNative) {
+                    balance = await provider.getBalance(currentAccount);
+                } else {
+                    const contract = new ethers.Contract(token.address, erc20Abi, provider);
+                    balance = await contract.balanceOf(currentAccount);
+                }
+
+                const formattedBalance = ethers.utils.formatUnits(balance, token.decimals);
+                topTokenBalance.innerText = `Balance: ${parseFloat(formattedBalance).toFixed(4)}`;
+            };
+
             const fetchPrices = async () => {
                 try {
                     const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,binancecoin,solana&vs_currencies=usd');
@@ -327,11 +404,20 @@
                     appState.tokens.SOL.price = data.solana.usd;
                 } catch (error) {
                     console.error("Could not fetch token prices:", error);
-                    // Use fallback prices or notify user
                 } finally {
-                    updateUI(); // Update UI after fetching prices
+                    updateUI();
                 }
             };
+
+            const showNotification = (title, message) => {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                modal.classList.remove('hidden');
+            };
+            
+            modalClose.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
 
             const formatCurrency = (value, decimals = 2) => {
                 return new Intl.NumberFormat('en-US', { 
@@ -350,7 +436,7 @@
                 const topToken = appState.tokens[appState.topToken];
                 const bottomToken = appState.tokens[appState.bottomToken];
 
-                if (!topToken || !bottomToken) return;
+                if (!topToken || !bottomToken || !topToken.price || !bottomToken.price) return;
 
                 const amountInUsdt = amount * topToken.price;
                 const finalAmount = amountInUsdt / bottomToken.price;
@@ -360,11 +446,6 @@
             };
             
             const updateUI = () => {
-                // Update tabs
-                buyTab.classList.toggle('active', appState.mode === 'buy');
-                sellTab.classList.toggle('active', appState.mode === 'sell');
-
-                // Prevent selecting the same token on both sides.
                 if (appState.topToken === appState.bottomToken) {
                     for (const symbol in appState.tokens) {
                         if (symbol !== appState.topToken) {
@@ -374,18 +455,18 @@
                     }
                 }
 
-                // Update currency selectors
+                buyTab.classList.toggle('active', appState.mode === 'buy');
+                sellTab.classList.toggle('active', appState.mode === 'sell');
+
                 const topTokenData = appState.tokens[appState.topToken];
                 const bottomTokenData = appState.tokens[appState.bottomToken];
                 
                 topCurrencySelector.innerHTML = `<img src="${topTokenData.logo}" alt="${topTokenData.name}" class="w-6 h-6 rounded-full"><span class="font-bold">${topTokenData.symbol}</span><i class="fas fa-chevron-down text-xs text-gray-500"></i>`;
                 bottomCurrencySelector.innerHTML = `<img src="${bottomTokenData.logo}" alt="${bottomTokenData.name}" class="w-6 h-6 rounded-full"><span class="font-bold">${bottomTokenData.symbol}</span><i class="fas fa-chevron-down text-xs text-gray-500"></i>`;
                 
-                // Update price info
                 const rate = topTokenData.price / bottomTokenData.price;
                 priceInfo.innerHTML = `1 ${topTokenData.symbol} ≈ <span class="text-white">${formatCurrency(rate, rate > 10 ? 2 : 6)}</span> ${bottomTokenData.symbol}`;
 
-                // Update button text and labels
                 const topInputLabel = document.getElementById('top-input-label');
                 const bottomInputLabel = document.getElementById('bottom-input-label');
 
@@ -393,12 +474,13 @@
                     topInputLabel.innerText = 'Spend';
                     bottomInputLabel.innerText = 'Receive';
                     actionButton.innerText = `Buy ${bottomTokenData.symbol}`;
-                } else { // sell mode
+                } else {
                     topInputLabel.innerText = 'Sell';
                     bottomInputLabel.innerText = 'Receive';
                     actionButton.innerText = `Sell ${topTokenData.symbol}`;
                 }
                 
+                getTokenBalance(appState.topToken);
                 calculate();
             };
             
@@ -413,7 +495,8 @@
                         item.className = 'token-item';
                         item.dataset.symbol = symbol;
                         item.innerHTML = `<img src="${token.logo}" alt="${token.name}"><span class="font-semibold">${token.name} (${token.symbol})</span>`;
-                        item.addEventListener('click', () => {
+                        item.addEventListener('click', (e) => {
+                            e.stopPropagation();
                             appState[position + 'Token'] = symbol;
                             updateUI();
                             listElement.classList.add('hidden');
@@ -424,31 +507,11 @@
                 listElement.classList.toggle('hidden');
             };
 
-            // --- Event Listeners ---
-            buyTab.addEventListener('click', () => { 
-                if (appState.mode !== 'buy') {
-                    appState.mode = 'buy'; 
-                    updateUI(); 
-                }
-            });
-            sellTab.addEventListener('click', () => { 
-                if (appState.mode !== 'sell') {
-                    appState.mode = 'sell'; 
-                    updateUI(); 
-                }
-            });
+            buyTab.addEventListener('click', () => { if (appState.mode !== 'buy') { appState.mode = 'buy'; updateUI(); } });
+            sellTab.addEventListener('click', () => { if (appState.mode !== 'sell') { appState.mode = 'sell'; updateUI(); } });
             
-            topCurrencySelector.addEventListener('click', (e) => {
-                e.stopPropagation();
-                bottomTokenList.classList.add('hidden');
-                renderTokenList(topTokenList, 'top');
-            });
-
-            bottomCurrencySelector.addEventListener('click', (e) => {
-                e.stopPropagation();
-                topTokenList.classList.add('hidden');
-                renderTokenList(bottomTokenList, 'bottom');
-            });
+            topCurrencySelector.addEventListener('click', (e) => { e.stopPropagation(); bottomTokenList.classList.add('hidden'); renderTokenList(topTokenList, 'top'); });
+            bottomCurrencySelector.addEventListener('click', (e) => { e.stopPropagation(); topTokenList.classList.add('hidden'); renderTokenList(bottomTokenList, 'bottom'); });
 
             document.addEventListener('click', (e) => {
                 if (!topTokenList.contains(e.target)) topTokenList.classList.add('hidden');
@@ -458,19 +521,14 @@
             topInputField.addEventListener('input', calculate);
 
             actionButton.addEventListener('click', () => {
-                const spendAmount = parseFloat(topInputField.value).toFixed(2);
-                const receiveAmount = bottomInputField.value;
-                const spendCurrency = appState.topToken;
-                const receiveCurrency = appState.bottomToken;
-
-                if (spendAmount > 0) {
-                     showNotification('Purchase Confirmation', `You are about to ${appState.mode === 'buy' ? 'spend' : 'sell'} ${spendAmount} ${spendCurrency} to receive ${receiveAmount} ${receiveCurrency}. This is a simulation.`);
-                } else {
-                    showNotification('Invalid Input', 'Please enter a valid amount to spend.');
+                if (!currentAccount) {
+                    showNotification('Wallet Not Connected', 'Please connect your wallet first to proceed with the transaction.');
+                    return;
                 }
+                // Placeholder for actual swap logic
+                showNotification('Transaction Simulation', 'This would initiate a real blockchain transaction. Functionality not yet implemented.');
             });
             
-            // --- Initial Setup ---
             fetchPrices();
         });
     </script>
