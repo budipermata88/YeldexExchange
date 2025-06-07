@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buy Bitcoin with YLDX - YELDEX</title>
+    <title>Buy USDT with YLDX - YELDEX</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="logo.png" onerror="this.onerror=null;this.src='https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/yellow-coin-icon.png';">
+
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -182,20 +185,23 @@
                             <input type="text" id="receive-amount" readonly class="w-full bg-transparent p-3 text-white text-xl font-semibold outline-none cursor-not-allowed">
                             <div class="h-8 border-l border-gray-700 mx-3"></div>
                             <div class="flex items-center space-x-2 pr-3 cursor-pointer">
-                                 <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1.png" alt="Bitcoin Logo" class="w-6 h-6" onerror="this.onerror=null;this.src='https://placehold.co/24x24/f7931a/fff?text=B';">
-                                <span class="font-bold">BTC</span>
+                                 <!-- UPDATED: Changed to USDT -->
+                                 <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" alt="USDT Logo" class="w-6 h-6" onerror="this.onerror=null;this.src='https://placehold.co/24x24/26a17b/fff?text=U';">
+                                <span class="font-bold">USDT</span>
                                 <i class="fas fa-chevron-down text-xs text-gray-500"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 
+                <!-- UPDATED: Changed to USDT -->
                 <div class="text-center my-4 text-sm font-medium" style="color: var(--yeldex-text-secondary);">
-                    1 BTC ≈ <span id="btc-price" class="text-white">54,000.00</span> YLDX
+                    1 USDT ≈ <span id="usdt-price" class="text-white">324.00</span> YLDX
                 </div>
                 
+                <!-- UPDATED: Changed button text -->
                 <button id="buy-btn" style="background-color: var(--yeldex-yellow); color: var(--yeldex-bg);" class="w-full py-3 rounded-md text-lg font-bold transition-opacity hover:opacity-90">
-                    Buy BTC
+                    Buy USDT
                 </button>
                 
                 <div class="mt-6 text-sm">
@@ -234,7 +240,6 @@
                 mobileMenuButton.setAttribute('aria-expanded', !isExpanded);
                 mobileMenu.classList.toggle('hidden');
                 
-                // Toggle icon between hamburger and close (X)
                 if (mobileMenu.classList.contains('hidden')) {
                     menuIcon.classList.remove('fa-times');
                     menuIcon.classList.add('fa-bars');
@@ -248,7 +253,7 @@
             // --- Purchase Card Logic ---
             const spendAmountInput = document.getElementById('spend-amount');
             const receiveAmountInput = document.getElementById('receive-amount');
-            const btcPriceElement = document.getElementById('btc-price');
+            const usdtPriceElement = document.getElementById('usdt-price'); // UPDATED
             const buyButton = document.getElementById('buy-btn');
             
             // --- Modal Logic ---
@@ -257,7 +262,8 @@
             const modalMessage = document.getElementById('notification-message');
             const modalClose = document.getElementById('notification-close');
 
-            let currentBtcPriceInYldx = 54123.45;
+            // UPDATED: Price and variable name
+            let currentUsdtPriceInYldx = 324.00;
 
             const showNotification = (title, message) => {
                 modalTitle.textContent = title;
@@ -279,15 +285,17 @@
             const updateReceiveAmount = () => {
                 const spendAmount = parseFloat(spendAmountInput.value);
                 if (isNaN(spendAmount) || spendAmount <= 0) {
-                    receiveAmountInput.value = '0.00000000';
+                    receiveAmountInput.value = '0.00';
                     return;
                 }
-                const receivedBtc = spendAmount / currentBtcPriceInYldx;
-                receiveAmountInput.value = receivedBtc.toFixed(8);
+                // UPDATED: Calculation logic
+                const receivedUsdt = spendAmount / currentUsdtPriceInYldx;
+                receiveAmountInput.value = receivedUsdt.toFixed(2);
             };
 
             const initialize = () => {
-                btcPriceElement.textContent = formatCurrency(currentBtcPriceInYldx);
+                // UPDATED: Set initial price
+                usdtPriceElement.textContent = formatCurrency(currentUsdtPriceInYldx);
                 updateReceiveAmount();
             };
 
@@ -297,22 +305,26 @@
 
             buyButton.addEventListener('click', () => {
                 const yldxAmount = parseFloat(spendAmountInput.value).toFixed(2);
-                const btcAmount = receiveAmountInput.value;
+                const usdtAmount = receiveAmountInput.value; // UPDATED
 
                 if (yldxAmount > 0) {
+                    // UPDATED: Notification message
                     showNotification(
                         'Purchase Confirmation',
-                        `You are about to buy ${btcAmount} BTC for ${yldxAmount} YLDX. This is a simulation, no real transaction will occur.`
+                        `You are about to buy ${usdtAmount} USDT for ${yldxAmount} YLDX. This is a simulation, no real transaction will occur.`
                     );
                 } else {
                     showNotification('Invalid Input', 'Please enter a valid amount to spend.');
                 }
             });
 
+            // This interval can be removed if you want a fixed price
             setInterval(() => {
-                const priceChange = (Math.random() - 0.5) * 0.002 * currentBtcPriceInYldx;
-                currentBtcPriceInYldx += priceChange;
-                btcPriceElement.textContent = formatCurrency(currentBtcPriceInYldx);
+                const priceChange = (Math.random() - 0.5) * 2; // Price fluctuates by +/- 1
+                currentUsdtPriceInYldx += priceChange;
+                if(currentUsdtPriceInYldx < 0) currentUsdtPriceInYldx = 324; // Reset if it goes too low
+                
+                usdtPriceElement.textContent = formatCurrency(currentUsdtPriceInYldx);
                 updateReceiveAmount();
             }, 5000);
         });
