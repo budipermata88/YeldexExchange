@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buy USDT with YLDX - YELDEX</title>
+    <title>Buy & Sell USDT with YLDX - YELDEX</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="logo.png" onerror="this.onerror=null;this.src='https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/yellow-coin-icon.png';">
@@ -161,47 +161,42 @@
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-white">Buy & Sell</h2>
                     <div class="flex space-x-4 text-sm font-semibold">
-                        <button class="tab-link active py-1 transition-colors">Buy</button>
-                        <button class="tab-link text-gray-500 py-1 transition-colors">Sell</button>
+                        <button id="buy-tab" class="tab-link active py-1 transition-colors">Buy</button>
+                        <button id="sell-tab" class="tab-link text-gray-500 py-1 transition-colors">Sell</button>
                     </div>
                 </div>
 
                 <div class="space-y-4">
+                    <!-- Top Input Group -->
                     <div class="space-y-2">
-                        <label for="spend-amount" class="text-sm font-medium" style="color: var(--yeldex-text-secondary);">Spend</label>
+                        <label id="top-input-label" for="top-input-field" class="text-sm font-medium" style="color: var(--yeldex-text-secondary);">Spend</label>
                         <div class="flex items-center bg-gray-900 rounded-md border border-gray-700 focus-within:border-yellow-400 transition-colors">
-                            <input type="number" id="spend-amount" value="100" class="w-full bg-transparent p-3 text-white text-xl font-semibold outline-none">
+                            <input type="number" id="top-input-field" value="100" class="w-full bg-transparent p-3 text-white text-xl font-semibold outline-none">
                             <div class="h-8 border-l border-gray-700 mx-3"></div>
-                            <div class="flex items-center space-x-2 pr-3 cursor-pointer">
-                                <img src="logo.png" alt="YLDX Logo" class="w-6 h-6 rounded-full" onerror="this.onerror=null;this.src='https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/yellow-coin-icon.png';">
-                                <span class="font-bold">YLDX</span>
-                                <i class="fas fa-chevron-down text-xs text-gray-500"></i>
+                            <div id="top-currency-selector" class="flex items-center space-x-2 pr-3 cursor-pointer">
+                                <!-- Content will be injected by JS -->
                             </div>
                         </div>
                     </div>
+                    <!-- Bottom Input Group -->
                     <div class="space-y-2">
-                        <label for="receive-amount" class="text-sm font-medium" style="color: var(--yeldex-text-secondary);">Receive</label>
+                        <label id="bottom-input-label" for="bottom-input-field" class="text-sm font-medium" style="color: var(--yeldex-text-secondary);">Receive</label>
                         <div class="flex items-center bg-gray-900 rounded-md border border-gray-700">
-                            <input type="text" id="receive-amount" readonly class="w-full bg-transparent p-3 text-white text-xl font-semibold outline-none cursor-not-allowed">
+                            <input type="text" id="bottom-input-field" readonly class="w-full bg-transparent p-3 text-white text-xl font-semibold outline-none cursor-not-allowed">
                             <div class="h-8 border-l border-gray-700 mx-3"></div>
-                            <div class="flex items-center space-x-2 pr-3 cursor-pointer">
-                                 <!-- UPDATED: Changed to USDT -->
-                                 <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" alt="USDT Logo" class="w-6 h-6" onerror="this.onerror=null;this.src='https://placehold.co/24x24/26a17b/fff?text=U';">
-                                <span class="font-bold">USDT</span>
-                                <i class="fas fa-chevron-down text-xs text-gray-500"></i>
+                            <div id="bottom-currency-selector" class="flex items-center space-x-2 pr-3 cursor-pointer">
+                                 <!-- Content will be injected by JS -->
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- UPDATED: Changed to USDT -->
-                <div class="text-center my-4 text-sm font-medium" style="color: var(--yeldex-text-secondary);">
-                    1 USDT ≈ <span id="usdt-price" class="text-white">324.00</span> YLDX
+                <div id="price-info" class="text-center my-4 text-sm font-medium" style="color: var(--yeldex-text-secondary);">
+                    <!-- Content will be injected by JS -->
                 </div>
                 
-                <!-- UPDATED: Changed button text -->
-                <button id="buy-btn" style="background-color: var(--yeldex-yellow); color: var(--yeldex-bg);" class="w-full py-3 rounded-md text-lg font-bold transition-opacity hover:opacity-90">
-                    Buy USDT
+                <button id="action-button" style="background-color: var(--yeldex-yellow); color: var(--yeldex-bg);" class="w-full py-3 rounded-md text-lg font-bold transition-opacity hover:opacity-90">
+                    <!-- Text will be injected by JS -->
                 </button>
                 
                 <div class="mt-6 text-sm">
@@ -249,84 +244,126 @@
                 }
             });
 
-
-            // --- Purchase Card Logic ---
-            const spendAmountInput = document.getElementById('spend-amount');
-            const receiveAmountInput = document.getElementById('receive-amount');
-            const usdtPriceElement = document.getElementById('usdt-price'); // UPDATED
-            const buyButton = document.getElementById('buy-btn');
+            // --- Purchase Card Elements ---
+            const buyTab = document.getElementById('buy-tab');
+            const sellTab = document.getElementById('sell-tab');
+            const topInputField = document.getElementById('top-input-field');
+            const bottomInputField = document.getElementById('bottom-input-field');
+            const topCurrencySelector = document.getElementById('top-currency-selector');
+            const bottomCurrencySelector = document.getElementById('bottom-currency-selector');
+            const priceInfo = document.getElementById('price-info');
+            const actionButton = document.getElementById('action-button');
             
-            // --- Modal Logic ---
+            // --- Modal Elements ---
             const modal = document.getElementById('notification-modal');
             const modalTitle = document.getElementById('notification-title');
             const modalMessage = document.getElementById('notification-message');
             const modalClose = document.getElementById('notification-close');
 
-            // UPDATED: Price and variable name
-            let currentUsdtPriceInYldx = 324.00;
+            // --- State and Config ---
+            let transactionMode = 'buy'; // 'buy' or 'sell'
+            let yldxPerUsdt = 324.00;
 
+            const yldxCoinHTML = `
+                <img src="logo.png" alt="YLDX Logo" class="w-6 h-6 rounded-full" onerror="this.onerror=null;this.src='https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/yellow-coin-icon.png';">
+                <span class="font-bold">YLDX</span>
+                <i class="fas fa-chevron-down text-xs text-gray-500"></i>
+            `;
+            const usdtCoinHTML = `
+                <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" alt="USDT Logo" class="w-6 h-6" onerror="this.onerror=null;this.src='https://placehold.co/24x24/26a17b/fff?text=U';">
+                <span class="font-bold">USDT</span>
+                <i class="fas fa-chevron-down text-xs text-gray-500"></i>
+            `;
+            
+            // --- Functions ---
             const showNotification = (title, message) => {
                 modalTitle.textContent = title;
                 modalMessage.textContent = message;
                 modal.classList.remove('hidden');
-            }
+            };
             
             modalClose.addEventListener('click', () => {
                 modal.classList.add('hidden');
             });
 
-            const formatCurrency = (value) => {
+            const formatCurrency = (value, decimals = 2) => {
                 return new Intl.NumberFormat('en-US', { 
-                    minimumFractionDigits: 2, 
-                    maximumFractionDigits: 2 
+                    minimumFractionDigits: decimals, 
+                    maximumFractionDigits: decimals 
                 }).format(value);
             };
 
-            const updateReceiveAmount = () => {
-                const spendAmount = parseFloat(spendAmountInput.value);
-                if (isNaN(spendAmount) || spendAmount <= 0) {
-                    receiveAmountInput.value = '0.00';
+            const calculate = () => {
+                const amount = parseFloat(topInputField.value);
+                if (isNaN(amount) || amount <= 0) {
+                    bottomInputField.value = '0.00';
                     return;
                 }
-                // UPDATED: Calculation logic
-                const receivedUsdt = spendAmount / currentUsdtPriceInYldx;
-                receiveAmountInput.value = receivedUsdt.toFixed(2);
+                
+                if (transactionMode === 'buy') {
+                    // Spending YLDX to receive USDT
+                    const receivedUsdt = amount / yldxPerUsdt;
+                    bottomInputField.value = formatCurrency(receivedUsdt, 2);
+                } else {
+                    // Spending USDT to receive YLDX
+                    const receivedYldx = amount * yldxPerUsdt;
+                    bottomInputField.value = formatCurrency(receivedYldx, 2);
+                }
             };
 
-            const initialize = () => {
-                // UPDATED: Set initial price
-                usdtPriceElement.textContent = formatCurrency(currentUsdtPriceInYldx);
-                updateReceiveAmount();
+            const setMode = (mode) => {
+                transactionMode = mode;
+                topInputField.value = '100'; // Reset value on mode change
+                
+                if (mode === 'buy') {
+                    // --- UI for BUY mode ---
+                    buyTab.classList.add('active');
+                    sellTab.classList.remove('active');
+                    
+                    topCurrencySelector.innerHTML = yldxCoinHTML;
+                    bottomCurrencySelector.innerHTML = usdtCoinHTML;
+                    
+                    priceInfo.innerHTML = `1 USDT ≈ <span class="text-white">${formatCurrency(yldxPerUsdt, 2)}</span> YLDX`;
+                    actionButton.innerText = 'Buy USDT';
+
+                } else { // mode === 'sell'
+                    // --- UI for SELL mode ---
+                    sellTab.classList.add('active');
+                    buyTab.classList.remove('active');
+                    
+                    topCurrencySelector.innerHTML = usdtCoinHTML;
+                    bottomCurrencySelector.innerHTML = yldxCoinHTML;
+
+                    const usdtPerYldx = 1 / yldxPerUsdt;
+                    priceInfo.innerHTML = `1 YLDX ≈ <span class="text-white">${formatCurrency(usdtPerYldx, 6)}</span> USDT`;
+                    actionButton.innerText = 'Sell USDT';
+                }
+                calculate(); // Recalculate with new mode
             };
+            
+            // --- Event Listeners ---
+            buyTab.addEventListener('click', () => setMode('buy'));
+            sellTab.addEventListener('click', () => setMode('sell'));
+            topInputField.addEventListener('input', calculate);
 
-            initialize();
+            actionButton.addEventListener('click', () => {
+                const spendAmount = parseFloat(topInputField.value).toFixed(2);
+                const receiveAmount = bottomInputField.value;
+                const spendCurrency = transactionMode === 'buy' ? 'YLDX' : 'USDT';
+                const receiveCurrency = transactionMode === 'buy' ? 'USDT' : 'YLDX';
 
-            spendAmountInput.addEventListener('input', updateReceiveAmount);
-
-            buyButton.addEventListener('click', () => {
-                const yldxAmount = parseFloat(spendAmountInput.value).toFixed(2);
-                const usdtAmount = receiveAmountInput.value; // UPDATED
-
-                if (yldxAmount > 0) {
-                    // UPDATED: Notification message
+                if (spendAmount > 0) {
                     showNotification(
                         'Purchase Confirmation',
-                        `You are about to buy ${usdtAmount} USDT for ${yldxAmount} YLDX. This is a simulation, no real transaction will occur.`
+                        `You are about to ${transactionMode} ${receiveAmount} ${receiveCurrency} for ${spendAmount} ${spendCurrency}. This is a simulation.`
                     );
                 } else {
                     showNotification('Invalid Input', 'Please enter a valid amount to spend.');
                 }
             });
-
-            // This interval can be removed if you want a fixed price
-            setInterval(() => {
-                const priceChange = (Math.random() - 0.5) * 2; // Price fluctuates by +/- 1
-                currentUsdtPriceInYldx += priceChange;
-                if(currentUsdtPriceInYldx < 0) currentUsdtPriceInYldx = 324; // Reset if it goes too low
-                
-                usdtPriceElement.textContent = formatCurrency(currentUsdtPriceInYldx);
-                updateReceiveAmount();
-            }, 5000);
+            
+            // --- Initial Setup ---
+            setMode('buy');
         });
     </script>
 </body>
